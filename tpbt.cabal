@@ -19,6 +19,8 @@ executable tpbt
         ImportQualifiedPost
         ViewPatterns
         OverloadedStrings
+        DeriveGeneric
+        DeriveAnyClass
     build-depends:    base ^>=4.17.2.1
                     , brick
                     , http-conduit
