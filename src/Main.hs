@@ -1,9 +1,11 @@
 module Main where
 
+import Codec.Binary.UTF8.String (utf8Encode)
 import Data.Aeson
 import Data.List (intercalate)
 import GHC.Generics (Generic)
 import Network.HTTP.Simple
+import Network.URI.Encode (encode)
 import Prelude hiding (id)
 
 data Song = Song
@@ -25,6 +27,12 @@ data Song = Song
 api :: String
 api = "https://apibay.org/"
 
+torrentLink :: String
+torrentLink = undefined
+
+encodeTitle :: String -> String
+encodeTitle = encode . utf8Encode
+
 search :: String -> String
 search (words -> s) = "q.php?q=" <> s' <> "&cat=101"
   where
@@ -35,4 +43,4 @@ main = do
     l <- getLine
     req <- parseRequest ("GET " <> api <> search l)
     resp <- httpBS req
-    print (getResponseBody resp)
+    putStrLn $ unpack (getResponseBody resp)
