@@ -19,7 +19,7 @@ executable tpbt
         ViewPatterns
         OverloadedStrings
         DeriveGeneric
-        DeriveAnyClass
+        NamedFieldPuns
     build-depends:    base ^>=4.17.2.1
                     , brick
                     , http-conduit
