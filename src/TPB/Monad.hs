@@ -41,4 +41,4 @@ instance TPBMonad TPB where
         s <- mkURL <$> liftIO getLine
         req <- liftIO (mkReq s)
         resp <- liftIO (httpJSON req :: IO (Response [Song]))
-        liftIO $ print resp
+        liftIO $ print (getResponseBody resp)
