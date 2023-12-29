@@ -14,19 +14,24 @@ extra-doc-files:    README.md
 executable tpbt
     ghc-options:      -Wall -threaded
     main-is:          Main.hs
+    other-modules:    TPB.Internals
+                    , TPB.Monad
     default-extensions:
         ImportQualifiedPost
         ViewPatterns
         OverloadedStrings
         DeriveGeneric
         NamedFieldPuns
+        GeneralizedNewtypeDeriving
+        FlexibleInstances
     build-depends:    base ^>=4.17.2.1
                     , brick
                     , http-conduit
-                    , transformers
+                    , mtl
                     , aeson
                     , bytestring
                     , uri-encode
                     , utf8-string
+                    , exceptions
     hs-source-dirs:   src
     default-language: Haskell2010
