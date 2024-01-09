@@ -1,8 +1,7 @@
 module Main where
 
-import Control.Monad (void)
-import Control.Monad.State
-import TPB.Monad
+import App
 
+-- run the pirate bay void $ flip runStateT [] $ unTPB search
 main :: IO ()
-main = void $ flip runStateT [] $ unTPB search
+main = runApp
