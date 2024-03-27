@@ -1,0 +1,26 @@
+cabal-version:      3.0
+name:               tpbt
+version:            0.1.0.0
+synopsis:           The Pirate Bay TUI
+homepage:           https://github.com/isaac025/tpbt
+license:            GPL-2.0-only
+license-file:       LICENSE
+author:             Isaac Lopez
+maintainer:         isaac.lopez@upr.edu
+category:           Web
+build-type:         Simple
+extra-doc-files:    
+    CHANGELOG.md
+    README.md
+
+executable tpbt
+    ghc-options:      -Wall
+    main-is:          Main.hs
+    -- other-modules:
+    -- other-extensions:
+    build-depends:    base ^>=4.17.2.1
+                    , mtl
+                    , brick
+                    , http-conduit
+    hs-source-dirs:   src
+    default-language: Haskell2010
