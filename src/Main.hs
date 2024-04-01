@@ -6,7 +6,7 @@ import TPB
 mkParams :: String -> Category -> Params
 mkParams s c = Params opts []
   where
-    opts = SearchOptions (SearchField s) c
+    opts = SearchOptions s c
 
 main :: IO ()
 main = do

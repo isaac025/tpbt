@@ -2,17 +2,11 @@
 
 module TPB.Types where
 
+import Control.Monad.Catch
 import Data.Aeson (FromJSON)
-import Data.ByteString (ByteString)
 import GHC.Generics (Generic)
 import Prelude hiding (id)
 
-{- Search Types -}
-
--- | SearchField - a string to search
-newtype SearchField = SearchField String
-
--- | Category - type of content to search
 data Category
     = All
     | Audio
@@ -22,27 +16,22 @@ data Category
     | Other
     deriving (Show, Bounded, Enum)
 
--- | Class to convert a Category to ByteString
-class ToByteString a where
-    toByteString :: a -> ByteString
+class CatNum a where
+    toCatNum :: a -> String
 
-instance ToByteString Category where
-    toByteString All = ""
-    toByteString Audio = "100"
-    toByteString Video = "100"
-    toByteString Applications = "100"
-    toByteString Games = "100"
-    toByteString Other = "100"
+instance CatNum Category where
+    toCatNum All = "0"
+    toCatNum Audio = "100"
+    toCatNum Video = "200"
+    toCatNum Applications = "300"
+    toCatNum Games = "400"
+    toCatNum Other = "600"
 
--- | Options to pass to request
 data SearchOptions = SearchOptions
-    { searchField :: SearchField
+    { searchField :: String
     , searchCategory :: Category
     }
 
-{- Result Types -}
-
--- | Id of result
 data Result = Result
     { id :: String
     , name :: String
@@ -58,3 +47,14 @@ data Result = Result
     , imdb :: String
     }
     deriving (Generic, FromJSON, Show)
+
+data TPBError
+    = RequestError String
+    | JSONFormat
+    | NetworkError SomeException
+    deriving (Exception)
+
+instance Show TPBError where
+    show (RequestError s) = show s
+    show JSONFormat = "Error parsing json"
+    show (NetworkError _) = "Network communication error"

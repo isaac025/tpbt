@@ -31,6 +31,7 @@ executable tpbt
         MultiParamTypeClasses
         FlexibleInstances
         RankNTypes
+        ViewPatterns
 
     build-depends:    base ^>=4.17.2.1
                     , mtl
@@ -38,5 +39,6 @@ executable tpbt
                     , http-conduit
                     , bytestring
                     , aeson
+                    , exceptions
     hs-source-dirs:   src
     default-language: Haskell2010
