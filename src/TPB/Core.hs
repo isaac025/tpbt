@@ -22,16 +22,17 @@ mkSearchURL s (toCatNum -> cat) = api <> s' <> "&cat=" <> cat
 mkRequest :: (MonadThrow m, MonadIO m) => ByteString -> String -> m Request
 mkRequest method url = parseRequest url <&> setRequestMethod method
 
-getResults :: (MonadIO m) => Request -> m (Either TPBError [Result])
+getResults :: (MonadIO m) => Request -> m (Either TPBError Results)
 getResults req = do
     resp <- httpJSONEither req
     case getResponseBody resp of
         Left _ -> pure (Left JSONFormat)
-        Right r -> pure (Right $ getResponseBody r)
+        Right r -> pure (Right r)
 
 class (MonadIO m) => MonadTPB m where
     search :: m ()
 
+{-
 instance MonadTPB TpbM where
     search = do
         SearchOptions{..} <- grab @SearchOptions
@@ -40,3 +41,4 @@ instance MonadTPB TpbM where
         resp :: Response Array <- liftIO $ httpJSON req
         let body = getResponseBody resp
         liftIO $ print body
+-}

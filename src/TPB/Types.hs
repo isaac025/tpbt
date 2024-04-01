@@ -3,7 +3,7 @@
 module TPB.Types where
 
 import Control.Monad.Catch
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON (..), Value (..), (.:))
 import GHC.Generics (Generic)
 import Prelude hiding (id)
 
@@ -48,6 +48,12 @@ data Result = Result
     }
     deriving (Generic, FromJSON, Show)
 
+data Results = Results [Result]
+
+instance FromJSON Results where
+    parseJSON (Object o) = do
+        pts <- o .: ""
+        Results <$> parseJSON pts
 data TPBError
     = RequestError String
     | JSONFormat
