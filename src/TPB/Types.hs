@@ -2,9 +2,12 @@
 
 module TPB.Types where
 
+import Control.Monad (mzero)
 import Control.Monad.Catch
-import Data.Aeson (FromJSON (..), Value (..), (.:))
+import Data.Aeson (FromJSON (..), Value (Array), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
+import Data.Vector (toList)
 import GHC.Generics (Generic)
+import Network.HTTP.Simple (JSONException)
 import Prelude hiding (id)
 
 data Category
@@ -33,34 +36,37 @@ data SearchOptions = SearchOptions
     }
 
 data Result = Result
-    { id :: String
-    , name :: String
+    { added :: String
+    , category :: String
+    , id :: String
+    , imdb :: String
     , infoHash :: String
     , leechers :: String
-    , seeders :: String
+    , name :: String
     , numFiles :: String
+    , seeders :: String
     , size :: String
-    , username :: String
-    , added :: String
     , status :: String
-    , category :: String
-    , imdb :: String
+    , username :: String
     }
-    deriving (Generic, FromJSON, Show)
+    deriving (Generic, Show)
+
+instance FromJSON Result where
+    parseJSON = genericParseJSON (defaultOptions{fieldLabelModifier = camelTo2 '_'})
 
 data Results = Results [Result]
 
 instance FromJSON Results where
-    parseJSON (Object o) = do
-        pts <- o .: ""
-        Results <$> parseJSON pts
+    parseJSON (Array v) = Results <$> traverse parseJSON (toList v)
+    parseJSON _ = mzero
+
 data TPBError
     = RequestError String
-    | JSONFormat
+    | JSONFormat JSONException
     | NetworkError SomeException
     deriving (Exception)
 
 instance Show TPBError where
     show (RequestError s) = show s
-    show JSONFormat = "Error parsing json"
+    show (JSONFormat e) = "Error parsing json: " ++ show e
     show (NetworkError _) = "Network communication error"

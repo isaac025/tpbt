@@ -26,19 +26,15 @@ getResults :: (MonadIO m) => Request -> m (Either TPBError Results)
 getResults req = do
     resp <- httpJSONEither req
     case getResponseBody resp of
-        Left _ -> pure (Left JSONFormat)
+        Left e -> pure (Left $ JSONFormat e)
         Right r -> pure (Right r)
 
 class (MonadIO m) => MonadTPB m where
-    search :: m ()
+    search :: m (Either TPBError Results)
 
-{-
 instance MonadTPB TpbM where
     search = do
         SearchOptions{..} <- grab @SearchOptions
         let url = mkSearchURL searchField searchCategory
         req <- liftIO $ mkRequest "GET" url
-        resp :: Response Array <- liftIO $ httpJSON req
-        let body = getResponseBody resp
-        liftIO $ print body
--}
+        liftIO $ getResults req
