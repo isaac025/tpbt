@@ -22,11 +22,12 @@ class Has field env where
     obtain :: env -> field
 
 instance Has SearchOptions Params where obtain = searchOpts
+
 instance Has [Result] Params where obtain = results
 
 grab :: forall field env m. (MonadReader env m, Has field env) => m field
 grab = asks obtain
 {-# INLINE grab #-}
 
-runTpb :: TpbM a -> Params -> IO a
-runTpb tpb = runReaderT (runTpbM tpb)
+runTpb :: Params -> TpbM a -> IO a
+runTpb p = flip runReaderT p . runTpbM

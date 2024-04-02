@@ -16,7 +16,7 @@ main = do
     traverse_ printCats (zip [1 ..] [minBound .. maxBound :: Category])
     c <- (toEnum @Category) . (read @Int) <$> getLine
     let params = mkParams s c
-    p <- runTpb search params
+    p <- runTpb params search
     case p of
         Left r -> error $ show r
         Right (Results rs) -> traverse_ print rs

@@ -30,6 +30,7 @@ executable tpbt
         TypeApplications
         MultiParamTypeClasses
         FlexibleInstances
+        FlexibleContexts
         RankNTypes
         ViewPatterns
 
