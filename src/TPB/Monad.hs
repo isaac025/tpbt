@@ -1,33 +1,33 @@
+{-# LANGUAGE DerivingVia #-}
+
 module TPB.Monad (
-    Params (..),
-    TpbM (..),
-    Has (..),
-    grab,
+    SearchFields (..),
+    Tpb (..),
     runTpb,
 ) where
 
-import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Control.Monad.State
+import Data.Monoid (Ap (..))
 import TPB.Types
 
-data Params = Params
-    { searchOpts :: SearchOptions
-    , results :: [Result]
+-- | Search fields to pass to the pirate bay api
+data SearchFields = SearchFields
+    { search :: String
+    , searchCategory :: Category
     }
 
-newtype TpbM a = TpbM {runTpbM :: ReaderT Params IO a}
-    deriving (Functor, Applicative, Monad, MonadIO, MonadReader Params)
+-- | Torrents, downloaded data from the pirate bay
+data Torrents = Torrents
+    { results :: Results
+    , contents :: Contents
+    }
 
-class Has field env where
-    obtain :: env -> field
+newtype Tpb a = Tpb (ReaderT SearchFields (StateT Torrents IO) a)
+    deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadReader SearchFields, MonadState Torrents)
+    deriving (Semigroup, Monoid) via Ap Tpb a
 
-instance Has SearchOptions Params where obtain = searchOpts
-
-instance Has [Result] Params where obtain = results
-
-grab :: forall field env m. (MonadReader env m, Has field env) => m field
-grab = asks obtain
-{-# INLINE grab #-}
-
-runTpb :: Params -> TpbM a -> IO a
-runTpb p = flip runReaderT p . runTpbM
+runTpb :: SearchFields -> Tpb a -> IO a
+runTpb p (Tpb a) = evalStateT (runReaderT a p) emptyTorrents
+  where
+    emptyTorrents = Torrents (Results []) (Contents [])

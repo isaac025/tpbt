@@ -4,12 +4,13 @@ module TPB.Types where
 
 import Control.Monad (mzero)
 import Control.Monad.Catch
-import Data.Aeson (FromJSON (..), Value (Array), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
+import Data.Aeson (FromJSON (..), Value (Array, Object), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON, (.:))
 import Data.Vector (toList)
 import GHC.Generics (Generic)
 import Network.HTTP.Simple (JSONException)
 import Prelude hiding (id)
 
+-- | Categories for searching on the pirate bay api
 data Category
     = All
     | Audio
@@ -19,6 +20,7 @@ data Category
     | Other
     deriving (Show, Bounded, Enum)
 
+-- | Class to pass the actual argument to the api
 class CatNum a where
     toCatNum :: a -> String
 
@@ -30,11 +32,7 @@ instance CatNum Category where
     toCatNum Games = "400"
     toCatNum Other = "600"
 
-data SearchOptions = SearchOptions
-    { searchField :: String
-    , searchCategory :: Category
-    }
-
+-- | Results received from the API as json
 data Result = Result
     { added :: String
     , category :: String
@@ -54,10 +52,30 @@ data Result = Result
 instance FromJSON Result where
     parseJSON = genericParseJSON (defaultOptions{fieldLabelModifier = camelTo2 '_'})
 
-data Results = Results [Result]
+-- | newtype wrapper of results since the api returns an JSON Array
+newtype Results = Results [Result]
 
 instance FromJSON Results where
     parseJSON (Array v) = Results <$> traverse parseJSON (toList v)
+    parseJSON _ = mzero
+
+-- | The content of an individual result
+data Content = Content
+    { cname :: String
+    , csize :: Int
+    }
+    deriving (Generic, Show)
+
+instance FromJSON Content where
+    parseJSON (Object o) =
+        Content
+            <$> o .: "name"
+            <*> o .: "size"
+
+newtype Contents = Contents [Content]
+
+instance FromJSON Contents where
+    parseJSON (Array v) = Contents <$> traverse parseJSON (toList v)
     parseJSON _ = mzero
 
 data TPBError

@@ -1,9 +1,9 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module TPB.Core (MonadTPB (..)) where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class
+import Control.Monad.Reader
+import Data.Aeson (FromJSON)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.List (intercalate)
@@ -19,17 +19,20 @@ import TPB.Types
 import Prelude hiding (id)
 
 api :: String
-api = "https://apibay.org/q.php"
+api = "https://apibay.org/"
 
-mkSearchURL :: String -> Category -> String
-mkSearchURL s (toCatNum -> cat) = api <> s' <> "&cat=" <> cat
+mkURL :: String -> String -> String -> Maybe Category -> String
+mkURL qs q s Nothing = api <> qs <> s'
   where
-    s' = "?q=" <> intercalate "%20" (words s)
+    s' = q <> intercalate "%20" (words s)
+mkURL qs q s (Just (toCatNum -> cat)) = api <> qs <> s' <> "&cat=" <> cat
+  where
+    s' = q <> intercalate "%20" (words s)
 
 mkRequest :: (MonadThrow m, MonadIO m) => ByteString -> String -> m Request
 mkRequest method url = parseRequest url <&> setRequestMethod method
 
-getResults :: (MonadIO m) => Request -> m (Either TPBError Results)
+getResults :: (MonadIO m, FromJSON a) => Request -> m (Either TPBError a)
 getResults req = do
     resp <- httpJSONEither req
     case getResponseBody resp of
@@ -37,13 +40,16 @@ getResults req = do
         Right r -> pure (Right r)
 
 class MonadTPB m where
-    search :: m (Either TPBError Results)
-    getContents :: String -> m (Either TPBError Results)
+    pirateSearch :: m (Either TPBError Results)
+    getContents :: Result -> m (Either TPBError Contents)
 
-instance MonadTPB TpbM where
-    search = do
-        SearchOptions{..} <- grab @SearchOptions
-        let url = mkSearchURL searchField searchCategory
+instance MonadTPB Tpb where
+    pirateSearch = do
+        SearchFields{..} <- ask
+        let url = mkURL "q.php" "?q=" search (Just searchCategory)
         req <- liftIO $ mkRequest "GET" url
         liftIO $ getResults req
-    getContents = undefined
+    getContents Result{..} = do
+        let url = mkURL "t.php" "?id=" id Nothing
+        req <- liftIO $ mkRequest "GET" url
+        liftIO $ getResults req

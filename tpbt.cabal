@@ -27,6 +27,7 @@ executable tpbt
         ImportQualifiedPost
         DeriveGeneric
         RecordWildCards
+        NamedFieldPuns
         TypeApplications
         MultiParamTypeClasses
         FlexibleInstances
