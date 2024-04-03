@@ -4,8 +4,8 @@ module TPB.Types where
 
 import Control.Monad (mzero)
 import Control.Monad.Catch
-import Data.Aeson (FromJSON (..), Value (Array, Object), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON, (.:))
-import Data.Vector (toList)
+import Data.Aeson (FromJSON (..), Value (Array), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
+import Data.Vector (Vector, toList)
 import GHC.Generics (Generic)
 import Network.HTTP.Simple (JSONException)
 import Prelude hiding (id)
@@ -61,16 +61,13 @@ instance FromJSON Results where
 
 -- | The content of an individual result
 data Content = Content
-    { cname :: String
-    , csize :: Int
+    { cname :: Vector String
+    , csize :: Vector Int
     }
     deriving (Generic, Show)
 
 instance FromJSON Content where
-    parseJSON (Object o) =
-        Content
-            <$> o .: "name"
-            <*> o .: "size"
+    parseJSON = genericParseJSON (defaultOptions{fieldLabelModifier = tail})
 
 newtype Contents = Contents [Content]
 

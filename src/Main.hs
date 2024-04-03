@@ -1,8 +1,9 @@
 module Main where
 
 import Data.Foldable (traverse_)
+import Data.Vector ((!))
 import TPB
-import Prelude hiding (getContents)
+import Prelude hiding (getContents, id)
 
 main :: IO ()
 main = do
@@ -21,7 +22,7 @@ main = do
             traverse_ printRes results
             putStrLn "Please select one to see the contents of it"
             s2 <- read @Int <$> getLine
-            q <- runTpb opts (getContents (snd (results !! s2)))
+            q <- runTpb opts (getContents (snd (results !! (s2 - 1))))
             case q of
                 Left r -> error $ show r
                 Right (Contents cs) -> traverse_ printConts (zip [1 ..] cs)
@@ -30,7 +31,7 @@ printCats :: (Int, Category) -> IO ()
 printCats (x, y) = putStrLn $ show x ++ ") " ++ show y
 
 printRes :: (Int, Result) -> IO ()
-printRes (x, Result{name}) = putStrLn $ show x ++ ". " ++ name
+printRes (x, Result{name, id}) = putStrLn $ show x ++ ". " ++ name ++ ": " ++ id
 
 printConts :: (Int, Content) -> IO ()
-printConts (x, Content{cname}) = putStrLn $ show x ++ ". " ++ cname
+printConts (x, Content{cname}) = putStrLn $ show x ++ ". " ++ (cname ! 0)

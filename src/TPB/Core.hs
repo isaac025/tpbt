@@ -50,6 +50,7 @@ instance MonadTPB Tpb where
         req <- liftIO $ mkRequest "GET" url
         liftIO $ getResults req
     getContents Result{..} = do
-        let url = mkURL "t.php" "?id=" id Nothing
+        let url = mkURL "f.php" "?id=" id Nothing
+        liftIO $ print url
         req <- liftIO $ mkRequest "GET" url
         liftIO $ getResults req

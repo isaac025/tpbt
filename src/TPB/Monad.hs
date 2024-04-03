@@ -2,6 +2,7 @@
 
 module TPB.Monad (
     SearchFields (..),
+    Torrents (..),
     Tpb (..),
     runTpb,
 ) where
