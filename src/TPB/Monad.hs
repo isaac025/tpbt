@@ -7,6 +7,7 @@ module TPB.Monad (
     runTpb,
 ) where
 
+import Control.Monad.Catch
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Monoid (Ap (..))
@@ -25,7 +26,7 @@ data Torrents = Torrents
     }
 
 newtype Tpb a = Tpb (ReaderT SearchFields (StateT Torrents IO) a)
-    deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadReader SearchFields, MonadState Torrents)
+    deriving (Functor, Applicative, Monad, MonadThrow, MonadCatch, MonadIO, MonadReader SearchFields, MonadState Torrents)
     deriving (Semigroup, Monoid) via Ap Tpb a
 
 runTpb :: SearchFields -> Tpb a -> IO a

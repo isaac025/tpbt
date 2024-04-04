@@ -47,8 +47,10 @@ data Result = Result
     , status :: String
     , username :: String
     }
-    deriving (Generic, Show)
+    deriving (Generic)
 
+instance Show Result where
+    show Result{category, name, added, size} = unwords [show category, name, added, size]
 instance FromJSON Result where
     parseJSON = genericParseJSON (defaultOptions{fieldLabelModifier = camelTo2 '_'})
 

@@ -1,10 +1,12 @@
 module TPB.Core (MonadTPB (..)) where
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Control.Monad.State
 import Data.Aeson (FromJSON)
 import Data.ByteString (ByteString)
+import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
 import Data.List (intercalate)
 import Network.HTTP.Simple (
@@ -39,18 +41,42 @@ getResults req = do
         Left e -> pure (Left $ JSONFormat e)
         Right r -> pure (Right r)
 
+processReq ::
+    (MonadThrow m, MonadIO m, FromJSON a) =>
+    ByteString ->
+    String ->
+    String ->
+    String ->
+    Maybe Category ->
+    m a
+processReq method qs q s mcat = do
+    let url = mkURL qs q s mcat
+    req <- mkRequest method url
+    res <- getResults req
+    case res of
+        Right a -> pure a
+        Left e -> throwM e
+
+handler :: TPBError -> Tpb ()
+handler e = liftIO $ print e
+
 class MonadTPB m where
-    pirateSearch :: m (Either TPBError Results)
-    getContents :: Result -> m (Either TPBError Contents)
+    pirateSearch :: m ()
+    currentRes :: m ()
+    resultContents :: Result -> m ()
 
 instance MonadTPB Tpb where
     pirateSearch = do
         SearchFields{..} <- ask
-        let url = mkURL "q.php" "?q=" search (Just searchCategory)
-        req <- liftIO $ mkRequest "GET" url
-        liftIO $ getResults req
-    getContents Result{..} = do
-        let url = mkURL "f.php" "?id=" id Nothing
-        liftIO $ print url
-        req <- liftIO $ mkRequest "GET" url
-        liftIO $ getResults req
+        ( processReq "GET" "q.php" "?q=" search (Just searchCategory) >>= \e -> do
+                Torrents{..} <- get
+                put (Torrents{results = e, contents})
+            )
+            `catch` handler
+    currentRes = do
+        (Results res) <- gets results
+        liftIO $ traverse_ printRes (zip [0 ..] res)
+    resultContents Result{..} = undefined
+
+printRes :: (Int, Result) -> IO ()
+printRes (x, Result{name, id}) = putStrLn $ show x ++ ". " ++ name ++ ": " ++ id
