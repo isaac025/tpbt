@@ -38,6 +38,7 @@ executable tpbt
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , microlens
+                    , microlens-th
                     , microlens-mtl
                     , brick
                     , http-conduit
