@@ -3,14 +3,23 @@
 module Main where
 
 import Brick.AttrMap (AttrMap, AttrName, attrMap, attrName)
-import Brick.Focus (FocusRing, focusNext, focusPrev, focusRing, focusSetCurrent, withFocusRing)
+import Brick.Focus (FocusRing, focusGetCurrent, focusNext, focusPrev, focusRing, focusSetCurrent, withFocusRing)
 import Brick.Main (App (..), defaultMain, halt, showFirstCursor)
 import Brick.Types (BrickEvent (VtyEvent), EventM, Widget, zoom)
 import Brick.Util (fg)
-import Brick.Widgets.Border (border)
-import Brick.Widgets.Border.Style (unicodeBold)
+import Brick.Widgets.Border (border, borderWithLabel)
+import Brick.Widgets.Border.Style (unicode, unicodeBold)
 import Brick.Widgets.Center (hCenter, vCenter)
-import Brick.Widgets.Core (hBox, hLimit, str, vBox, vLimit, withAttr, withBorderStyle, (<+>))
+import Brick.Widgets.Core (
+    hBox,
+    hLimit,
+    str,
+    vBox,
+    vLimit,
+    withAttr,
+    withBorderStyle,
+    (<+>),
+ )
 import Brick.Widgets.Edit (
     Editor,
     editFocusedAttr,
@@ -18,7 +27,7 @@ import Brick.Widgets.Edit (
     handleEditorEvent,
     renderEditor,
  )
-import Brick.Widgets.List (List, list)
+import Brick.Widgets.List (List, list, listName, renderList)
 import Control.Monad (void)
 import Data.Vector (empty)
 import Graphics.Vty.Attributes (
@@ -36,24 +45,39 @@ import Lens.Micro.TH (makeLenses)
 import TPB
 
 data Name = Search | ResultList | ContentList
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
+
+instance Show Name where
+    show Search = "Search"
+    show ResultList = "Results"
+    show ContentList = "Result Contents"
 
 data State = State
     { _focus :: FocusRing Name
-    , _results :: List Name Result
-    , _contents :: List Name Content
+    , _resultsList :: List Name Result
+    , _contentsList :: List Name Content
     , _searchField :: Editor String Name
     }
 makeLenses ''State
 
 ui :: State -> [Widget Name]
-ui s = [vCenter $ maxWidth 200 $ vBox [drawSearch, instructions]]
+ui s = [vCenter $ maxWidth 200 $ vBox content]
   where
-    drawSearch = withBorderStyle unicodeBold $ border $ vLimit 1 $ label <+> e
+    content = [listsUi, searchUi, instrsUi]
+    searchUi = withBorderStyle unicodeBold $ border $ vLimit 1 $ label <+> e
     e = renderEditor (str . unlines) True (s ^. searchField)
     label = str "Search: "
     maxWidth w = hCenter . hLimit w
-    instructions =
+    toListUi r lns =
+        let isActive = focusGetCurrent (s ^. focus) == r
+         in s ^. lns & drawList isActive
+    listsUi =
+        hBox
+            [ hCenter $ toListUi (Just ResultList) resultsList
+            , str " "
+            , hCenter $ toListUi (Just ContentList) contentsList
+            ]
+    instrsUi =
         maxWidth 100 $
             hBox
                 [ drawInstr "Enter" "search/get contents"
@@ -61,11 +85,18 @@ ui s = [vCenter $ maxWidth 200 $ vBox [drawSearch, instructions]]
                 , drawInstr "/" "back to search"
                 ]
 
-drawList :: List Name Result -> Widget Name
-drawList l = listUi
+drawList :: (Show e) => Bool -> List Name e -> Widget Name
+drawList hasF l = listUi
   where
-    label = str "Results:"
-    box = borderWithLabel
+    listUi =
+        withBorderStyle unicode $
+            borderWithLabel (drawTitle l) $
+                renderList drawEls hasF l
+    drawTitle = str . show . listName
+
+drawEls :: (Show e) => Bool -> e -> Widget Name
+drawEls _ = str . show
+
 drawInstr :: String -> String -> Widget Name
 drawInstr k a =
     withAttr attrKey (str k)
@@ -77,8 +108,8 @@ initialState :: State
 initialState =
     State
         { _focus = focusRing [Search, ResultList, ContentList]
-        , _results = list ResultList empty 1
-        , _contents = list ContentList empty 1
+        , _resultsList = list ResultList empty 1
+        , _contentsList = list ContentList empty 1
         , _searchField = editor Search Nothing ""
         }
 
