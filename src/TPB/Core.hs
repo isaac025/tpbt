@@ -6,7 +6,6 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Data.Aeson (FromJSON)
 import Data.ByteString (ByteString)
-import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
 import Data.List (intercalate)
 import Network.HTTP.Simple (
@@ -62,7 +61,7 @@ handler e = liftIO $ print e
 
 class MonadTPB m where
     pirateSearch :: m ()
-    currentRes :: m ()
+    currentRes :: m Results
     resultContents :: Result -> m ()
 
 instance MonadTPB Tpb where
@@ -73,10 +72,5 @@ instance MonadTPB Tpb where
                 put (Torrents{results = e, contents})
             )
             `catch` handler
-    currentRes = do
-        (Results res) <- gets results
-        liftIO $ traverse_ printRes (zip [0 ..] res)
+    currentRes = gets results
     resultContents Result{..} = undefined
-
-printRes :: (Int, Result) -> IO ()
-printRes (x, Result{name, id}) = putStrLn $ show x ++ ". " ++ name ++ ": " ++ id

@@ -24,11 +24,14 @@ import Brick.Widgets.Edit (
     Editor,
     editFocusedAttr,
     editor,
+    getEditContents,
     handleEditorEvent,
     renderEditor,
  )
-import Brick.Widgets.List (List, list, listName, renderList)
+import Brick.Widgets.List (List, handleListEvent, list, listName, renderList)
 import Control.Monad (void)
+import Control.Monad.IO.Class
+import Data.Maybe (fromMaybe)
 import Data.Vector (empty)
 import Graphics.Vty.Attributes (
     bold,
@@ -40,7 +43,7 @@ import Graphics.Vty.Attributes (
  )
 import Graphics.Vty.Input (Event (EvKey), Key (..))
 import Lens.Micro ((&), (^.))
-import Lens.Micro.Mtl ((%=))
+import Lens.Micro.Mtl (use, (%=), (.=))
 import Lens.Micro.TH (makeLenses)
 import TPB
 
@@ -63,7 +66,7 @@ makeLenses ''State
 ui :: State -> [Widget Name]
 ui s = [vCenter $ maxWidth 200 $ vBox content]
   where
-    content = [listsUi, searchUi, instrsUi]
+    content = [searchUi, listsUi, instrsUi]
     searchUi = withBorderStyle unicodeBold $ border $ vLimit 1 $ label <+> e
     e = renderEditor (str . unlines) True (s ^. searchField)
     label = str "Search: "
@@ -118,7 +121,24 @@ event (VtyEvent (EvKey KEsc [])) = halt
 event (VtyEvent (EvKey (KChar '\t') [])) = focus %= focusNext
 event (VtyEvent (EvKey (KChar '/') [])) = focus %= focusSetCurrent Search
 event (VtyEvent (EvKey KBackTab [])) = focus %= focusPrev
-event v = zoom searchField $ handleEditorEvent v
+event e = do
+    f <- focusGetCurrent <$> use focus
+    case f of
+        (Just Search) -> handleSearch e
+        (Just ResultList) -> undefined -- zoom resultsList $ handleListEvent e
+        (Just ContentList) -> undefined -- zoom contentsList $ handleListEvent e
+        Nothing -> pure ()
+event _ = pure ()
+
+handleSearch :: BrickEvent Name e -> EventM Name State ()
+handleSearch (VtyEvent (EvKey KEnter [])) = do
+    c <- unwords . getEditContents <$> use searchField
+    let fs = mkSearchFields c
+    (Results res) <- liftIO $ runTpb fs (pirateSearch >> currentRes)
+    resultsList .= list ResultList res 1
+  where
+    mkSearchFields s = SearchFields s Audio
+handleSearch e = zoom searchField $ handleEditorEvent e
 
 attrBold :: AttrName
 attrBold = attrName "bold"

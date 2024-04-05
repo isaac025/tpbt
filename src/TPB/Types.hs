@@ -55,10 +55,10 @@ instance FromJSON Result where
     parseJSON = genericParseJSON (defaultOptions{fieldLabelModifier = camelTo2 '_'})
 
 -- | newtype wrapper of results since the api returns an JSON Array
-newtype Results = Results [Result]
+newtype Results = Results (Vector Result)
 
 instance FromJSON Results where
-    parseJSON (Array v) = Results <$> traverse parseJSON (toList v)
+    parseJSON (Array v) = Results <$> traverse parseJSON v
     parseJSON _ = mzero
 
 -- | The content of an individual result

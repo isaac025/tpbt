@@ -11,6 +11,7 @@ import Control.Monad.Catch
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Monoid (Ap (..))
+import Data.Vector (empty)
 import TPB.Types
 
 -- | Search fields to pass to the pirate bay api
@@ -32,4 +33,4 @@ newtype Tpb a = Tpb (ReaderT SearchFields (StateT Torrents IO) a)
 runTpb :: SearchFields -> Tpb a -> IO a
 runTpb p (Tpb a) = evalStateT (runReaderT a p) emptyTorrents
   where
-    emptyTorrents = Torrents (Results []) (Contents [])
+    emptyTorrents = Torrents (Results empty) (Contents [])
