@@ -14,23 +14,18 @@ extra-doc-files:
     README.md
 
 common warnings
-    ghc-options: -Wall -threaded
+    ghc-options: -Wall
 
 executable tpbt
     import:           warnings
     main-is:          Main.hs
-    -- other-modules:
+    -- exposed-modules:  TPB
     -- other-extensions:
     build-depends:    base ^>=4.17.2.1
+                    , http-conduit
                     , mtl
-                    , brick
-                    , vty
-                    , http-client
                     , aeson
                     , bytestring
-                    , microlens
-                    , microlens-mtl
-                    , microlens-th
                     , directory
                     , process
     hs-source-dirs:   src
