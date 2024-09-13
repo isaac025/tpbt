@@ -2,17 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
 import Control.Monad (when)
 import Data.Aeson (FromJSON (..), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
+import Data.Functor ((<&>))
 import Data.List (intercalate)
 import GHC.Generics (Generic)
 import Network.HTTP.Simple (Request, getResponseBody, httpJSON, parseRequest)
+import Network.URI.Encode (encode)
 import System.Exit (exitSuccess)
 import System.IO (hFlush, stdout)
+import System.Process (callProcess)
 import Prelude hiding (id)
 
 {- data Video
@@ -58,6 +62,25 @@ data Result = Result
     , imdb :: String
     }
     deriving (Generic)
+
+trackers :: String
+trackers =
+    concat
+        [ "&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337"
+        , "&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce"
+        , "&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce"
+        , "&tr=udp%3A%2F%2Ftracker.bittor.pw%3A1337%2Fannounce"
+        , "&tr=udp%3A%2F%2Fpublic.popcorn-tracker.org%3A6969%2Fannounce"
+        , "&tr=udp%3A%2F%2Ftracker.dler.org%3A6969%2Fannounce"
+        , "&tr=udp%3A%2F%2Fexodus.desync.com%3A6969"
+        , "&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce"
+        ]
+
+mkMagentLink :: Result -> String
+mkMagentLink Result{..} = base <> infoHash <> "&dn=" <> encode name <> trackers
+  where
+    base :: String
+    base = "magnet:?xt=urn:btih:"
 
 instance Show Result where
     show Result{..} = name <> " " <> show (roundToTwo $ bytesToMegaBytes size) <> "Mb"
@@ -106,7 +129,34 @@ instance Read Audio where
             _ -> []
 
 stdRead :: IO String
-stdRead = putStr "search> " >> hFlush stdout >> getLine
+stdRead = putStr "tpbt> " >> hFlush stdout >> getLine
+
+quit :: String -> IO ()
+quit s = when (s == "quit") exitSuccess
+
+chooseCategory :: IO String
+chooseCategory = do
+    putStrLn "Please choose a category:"
+    mapM_ putStrLn [y : ')' : ' ' : show x | (x, y) <- zip [Music .. Other] ['1' ..]]
+    c <- stdRead
+    quit c
+    pure $ toCat (read c :: Audio)
+
+search :: IO String
+search = do
+    putStrLn "Now search for anything:"
+    s <- words <$> stdRead
+    let s' = intercalate "%20" s
+    quit s'
+    pure s'
+
+chooseTorrent :: [(Int, Result)] -> IO (Maybe Result)
+chooseTorrent [] = pure Nothing
+chooseTorrent xs = do
+    putStrLn "Please choose: "
+    mapM_ putStrLn [show x <> ") " <> show r | (x, r) <- xs]
+    sel <- read @Int <$> stdRead
+    pure $ lookup sel xs
 
 main :: IO ()
 main = do
@@ -114,15 +164,10 @@ main = do
     repl
   where
     repl = do
-        putStrLn "Please choose a category:"
-        mapM_ putStrLn [y : ')' : ' ' : show x | (x, y) <- zip [Music .. Other] ['1' ..]]
-        c <- stdRead
-        when (c == "quit") exitSuccess
-        let cat = toCat (read c :: Audio)
-        putStrLn "Now search for anything:"
-        s <- words <$> stdRead
-        let search = intercalate "%20" s
-        when (search == "quit") exitSuccess
-        res <- fetchResults =<< mkRequest cat search
-        mapM_ putStr [x : ')' : ' ' : show r | (r, x) <- zip res ['1' ..]]
-        repl
+        cat <- chooseCategory
+        s <- search
+        res <- mkRequest cat s >>= fetchResults <&> zip [1 ..]
+        tor <- chooseTorrent res
+        case tor of
+            Nothing -> putStrLn "No results found!" >> repl
+            Just (mkMagentLink -> tor') -> callProcess "transmission-cli" [tor']

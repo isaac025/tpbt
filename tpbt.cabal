@@ -25,6 +25,7 @@ executable tpbt
                     , http-conduit
                     , mtl
                     , aeson
+                    , uri-encode
                     , bytestring
                     , directory
                     , process
