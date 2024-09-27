@@ -1,11 +1,12 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module TPB.Monad where
+
+import Network.HTTP.Simple (Request, getResponseBody, httpJSON, parseRequest)
+import Network.URI.Encode (encode)
+import TPB.Types
 
 api :: String
 api = "https://apibay.org/q.php"

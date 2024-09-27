@@ -2,15 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module TPB.Types where
 
 import Data.Aeson (FromJSON (..), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
 import GHC.Generics (Generic)
-import Network.HTTP.Simple (Request, getResponseBody, httpJSON, parseRequest)
-import Network.URI.Encode (encode)
 
 data Result = Result
     { id :: String

@@ -7,7 +7,7 @@ license:            GPL-2.0-only
 license-file:       LICENSE
 author:             Isaac Hiram Lopez Diaz
 maintainer:         isaac.lopez@upr.com
-category:           Web
+category:           Development
 build-type:         Simple
 extra-doc-files:    
     CHANGELOG.md
@@ -19,10 +19,15 @@ common warnings
 executable tpbt
     import:           warnings
     main-is:          Main.hs
-    exposed-modules:  TPB.Types
+    other-modules:    TPB.Types
                       TPB.Monad
     -- other-extensions:
     build-depends:    base ^>=4.17.2.1
+                    , brick
+                    , vty
+                    , microlens
+                    , microlens-mtl
+                    , microlens-th
                     , http-conduit
                     , mtl
                     , aeson
