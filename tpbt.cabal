@@ -14,7 +14,7 @@ extra-doc-files:
     README.md
 
 common warnings
-    ghc-options: -Wall
+    ghc-options: -Wall -threaded
 
 executable tpbt
     import:           warnings
