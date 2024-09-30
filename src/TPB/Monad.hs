@@ -4,22 +4,27 @@
 
 module TPB.Monad where
 
-import Network.HTTP.Simple (Request, getResponseBody, httpJSON, parseRequest)
+import Data.Vector (Vector, empty)
+import Network.HTTP.Simple (Request, getResponseBody, httpJSONEither, parseRequestThrow)
 import Network.URI.Encode (encode)
+import System.Process (callProcess)
 import TPB.Types
+import Prelude hiding (id)
 
 api :: String
 api = "https://apibay.org/q.php"
 
 mkRequest :: String -> String -> IO Request
-mkRequest c s = do
+mkRequest s c = do
     let url = api <> "?" <> "q=" <> s <> "&" <> "cat=" <> c
-    parseRequest ("GET " <> url)
+    parseRequestThrow ("GET " <> url)
 
-fetchResults :: Request -> IO [Result]
+fetchResults :: Request -> IO (Vector Result)
 fetchResults req = do
-    response <- httpJSON req
-    pure $ getResponseBody response
+    response <- getResponseBody <$> httpJSONEither req
+    case response of
+        Left _ -> pure empty
+        Right ls -> pure ls
 
 trackers :: String
 trackers =
@@ -39,3 +44,6 @@ mkMagentLink Result{..} = base <> infoHash <> "&dn=" <> encode name <> trackers
   where
     base :: String
     base = "magnet:?xt=urn:btih:"
+
+downloadTorrent :: Result -> IO ()
+downloadTorrent = callProcess "transmission-cli" . (: []) . mkMagentLink

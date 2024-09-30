@@ -8,6 +8,7 @@ module TPB.Types where
 
 import Data.Aeson (FromJSON (..), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
 import GHC.Generics (Generic)
+import Prelude hiding (id)
 
 data Result = Result
     { id :: String
@@ -26,12 +27,18 @@ data Result = Result
     deriving (Generic)
 
 instance Show Result where
-    show Result{..} = name <> " " <> show (roundToTwo $ bytesToMegaBytes size) <> "Mb"
+    show Result{..} = cleanName <> " " <> bytesToMegaBytes size <> "Mb"
       where
-        bytesToMegaBytes :: String -> Double
-        bytesToMegaBytes (read -> bytes :: Int) = fromIntegral bytes / 1e6
-        roundToTwo :: Double -> Double
-        roundToTwo x = fromIntegral (round (x * 100)) / 100
+        bytesToMegaBytes :: String -> String
+        bytesToMegaBytes (read -> size' :: Int) =
+            let bytes = show $ fromIntegral size' / 1e6
+             in roundToTwo bytes
+
+        roundToTwo :: String -> String
+        roundToTwo x = takeWhile (/= '.') x <> take 3 (dropWhile (/= '.') x)
+
+        cleanName :: String
+        cleanName = [x | x <- name, x `elem` ['a' .. 'z'] || x `elem` ['A' .. 'Z'] || x `elem` [' ', '-']]
 
 instance FromJSON Result where
     parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}
