@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -6,7 +7,8 @@
 
 module TPB.Types where
 
-import Data.Aeson (FromJSON (..), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
+import Data.Aeson (FromJSON (..), Value (..), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON, withObject, (.:))
+import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import Prelude hiding (id)
 
@@ -24,7 +26,7 @@ data Result = Result
     , category :: String
     , imdb :: String
     }
-    deriving (Generic)
+    deriving (Generic, Typeable)
 
 instance Show Result where
     show Result{..} = cleanName <> " " <> bytesToMegaBytes size <> "Mb"
@@ -43,6 +45,17 @@ instance Show Result where
 instance FromJSON Result where
     parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}
 
+data Song = Song Value Value
+    deriving (Generic, Typeable)
+
+instance Show Song where
+    show (Song n s) = show n <> " " <> show s
+
+instance FromJSON Song where
+    parseJSON = withObject "Song" $ \v ->
+        Song
+            <$> v .: "name"
+            <*> v .: "size"
 data Audio
     = Music
     | AudioBooks

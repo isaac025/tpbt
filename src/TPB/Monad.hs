@@ -2,8 +2,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module TPB.Monad where
+module TPB.Monad (
+    mkRequest,
+    fetch,
+    downloadTorrent,
+) where
 
+import Data.Aeson (FromJSON)
+import Data.Typeable (Typeable)
 import Data.Vector (Vector, empty)
 import Network.HTTP.Simple (Request, getResponseBody, httpJSONEither, parseRequestThrow)
 import Network.URI.Encode (encode)
@@ -11,16 +17,19 @@ import System.Process (callProcess)
 import TPB.Types
 import Prelude hiding (id)
 
-api :: String
-api = "https://apibay.org/q.php"
+api :: String -> String
+api f = "https://apibay.org/" <> f
 
-mkRequest :: String -> String -> IO Request
-mkRequest s c = do
-    let url = api <> "?" <> "q=" <> s <> "&" <> "cat=" <> c
+mkRequest :: Either (String, String) Result -> IO Request
+mkRequest (Left (s, c)) = do
+    let url = api "q.php" <> "?" <> "q=" <> s <> "&" <> "cat=" <> c
+    parseRequestThrow ("GET " <> url)
+mkRequest (Right Result{..}) = do
+    let url = api "f.php" <> "?" <> "id=" <> id
     parseRequestThrow ("GET " <> url)
 
-fetchResults :: Request -> IO (Vector Result)
-fetchResults req = do
+fetch :: forall a. (FromJSON a, Typeable a) => Request -> IO (Vector a)
+fetch req = do
     response <- getResponseBody <$> httpJSONEither req
     case response of
         Left _ -> pure empty
