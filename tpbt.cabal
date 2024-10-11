@@ -20,13 +20,18 @@ library
     import:           warnings
     exposed-modules:
         App
+        Types
+        Lifted
+        Config
     default-extensions:
-        GeneralizedNewtypeDeriving
         OverloadedStrings
     build-depends:    base ^>=4.17.2.1
                     , say
                     , directory
                     , text 
+                    , http-conduit
+                    , aeson
+                    , uri-encode
     hs-source-dirs:   src
     default-language: Haskell2010
 

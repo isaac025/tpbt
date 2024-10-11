@@ -1,10 +1,14 @@
+{-# LANGUAGE TypeApplications #-}
+
 module App where
 
+import Config
 import Control.Monad (unless, when)
 import Control.Monad.IO.Class
 import Data.Char (digitToInt)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import Data.Text.IO (getLine, putStr)
+import Lifted
 import Say
 import System.Directory (
     createDirectory,
@@ -15,17 +19,8 @@ import System.Directory (
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 import System.IO (hFlush, stdout)
+import Types
 import Prelude hiding (getLine, putStr)
-
-data AppEnvironment = AppEnvironment
-    { ipod :: FilePath
-    , saveTo :: FilePath
-    , search :: Text
-    , category :: Text
-    }
-
-newtype App a = App {unApp :: IO a}
-    deriving (Functor, Applicative, Monad, MonadIO)
 
 getNextDirectory :: [FilePath] -> FilePath
 getNextDirectory [] = "F00"
@@ -55,15 +50,22 @@ quit s = when (s == "quit" || s == "q") $ liftIO exitSuccess
 
 repl :: AppEnvironment -> App ()
 repl a = do
+    liftIO $ say "Search for an artist/song: "
     s <- textRead
     quit s
-    liftIO $ say $ "you searched for: " <> s
+    liftIO $ say "Select a category: "
+    printCategories
+    c <- textRead
+    quit c
+    req <- makeRequest (unpack s) (toCat (read @Audio $ unpack c))
+    res <- fetch req
+    liftIO $ say (pack $ show res)
     repl a
 
 makeAppEnvrionment :: FilePath -> App AppEnvironment
 makeAppEnvrionment f = do
     next <- makeNewSaveDir f
-    pure $ AppEnvironment f next "" ""
+    pure $ AppEnvironment f next
 
 run :: IO ()
 run = do
