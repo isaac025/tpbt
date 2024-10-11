@@ -15,8 +15,8 @@ newtype MusicDirectory = MusicDirectory Text
 
 instance Read MusicDirectory where
     readPrec = do
-        _ <- lex >>= \s -> if s == "F" then pure () else error "does not start with F"
-        digits <- lex >>= \s -> if all isDigit s then pure s else error "Expected digits after F"
+        _ <- lexP >>= \s -> if s == "F" then pure () else error "does not start with F"
+        digits <- lexP >>= \s -> if all isDigit s then pure s else error "Expected digits after F"
         pure $ MusicDirectory (pack $ "F" <> digits)
 
 data AppEnvironment = AppEnvironment
