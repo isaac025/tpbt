@@ -14,27 +14,19 @@ extra-doc-files:
     README.md
 
 common warnings
-    ghc-options: -Wall -threaded
+    ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wno-unused-top-binds -Wno-orphans -Wno-error=unrecognised-warning-flags 
 
 library
     import:           warnings
-    other-modules:    TUI
-                      TPB.Types
-                      TPB.Monad
+    exposed-modules:
+        App
+    default-extensions:
+        GeneralizedNewtypeDeriving
+        OverloadedStrings
     build-depends:    base ^>=4.17.2.1
-                    , brick
-                    , vty
-                    , microlens
-                    , microlens-mtl
-                    , microlens-th
-                    , http-conduit
-                    , mtl
-                    , aeson
-                    , uri-encode
-                    , bytestring
+                    , say
                     , directory
-                    , process
-                    , vector
+                    , text 
     hs-source-dirs:   src
     default-language: Haskell2010
 
