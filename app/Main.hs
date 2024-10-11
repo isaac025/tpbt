@@ -1,5 +1,6 @@
 module Main where
 
+import App
 
 main :: IO ()
-main = putStrLn "Hello World!"
+main = run

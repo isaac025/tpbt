@@ -1,27 +1,25 @@
 module App where
 
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.IO.Class
-import Data.Char (isDigit)
-import Data.Text (Text, all)
+import Data.Char (digitToInt)
+import Data.Text (Text, pack)
+import Data.Text.IO (getLine, putStr)
 import Say
-import System.Directory (doesDirectoryExist, listDirectory)
+import System.Directory (
+    createDirectory,
+    doesDirectoryExist,
+    listDirectory,
+    withCurrentDirectory,
+ )
 import System.Environment (getArgs)
-import Text.Read
-import Prelude hiding (all)
-
-newtype MusicDirectory = MusicDirectory Text
-    deriving (Show)
-
-instance Read MusicDirectory where
-    readPrec = do
-        _ <- lexP >>= \s -> if s == "F" then pure () else error "does not start with F"
-        digits <- lexP >>= \s -> if all isDigit s then pure s else error "Expected digits after F"
-        pure $ MusicDirectory (pack $ "F" <> digits)
+import System.Exit (exitSuccess)
+import System.IO (hFlush, stdout)
+import Prelude hiding (getLine, putStr)
 
 data AppEnvironment = AppEnvironment
-    { ipod :: [MusicDirectory]
-    , saveTo :: MusicDirectory
+    { ipod :: FilePath
+    , saveTo :: FilePath
     , search :: Text
     , category :: Text
     }
@@ -29,24 +27,48 @@ data AppEnvironment = AppEnvironment
 newtype App a = App {unApp :: IO a}
     deriving (Functor, Applicative, Monad, MonadIO)
 
-makeNewSaveDir :: FilePath -> App ()
+getNextDirectory :: [FilePath] -> FilePath
+getNextDirectory [] = "F00"
+getNextDirectory xs =
+    let dir = last xs
+        (c, s) = (tail dir, init dir)
+        n = digitToInt (last c) + 1
+     in s <> show n
+
+makeNewSaveDir :: FilePath -> App FilePath
 makeNewSaveDir f = do
     b <- liftIO $ doesDirectoryExist f
     unless b $
         say "Directory does not exist!"
     files <- liftIO $ listDirectory f
-    let next = makeNextDirectory files
-    pure ()
+    let next = getNextDirectory files
+    liftIO $ withCurrentDirectory f $ do
+        say $ "created directory: " <> pack next
+        createDirectory next
+    pure next
 
-makeAppEnv :: FilePath -> FilePath -> App AppEnvironment
-makeAppEnv _ _ = undefined
+textRead :: App Text
+textRead = liftIO (putStr "tpbt> ") >> liftIO (hFlush stdout) >> liftIO getLine
 
-run :: App ()
+quit :: Text -> App ()
+quit s = when (s == "quit" || s == "q") $ liftIO exitSuccess
+
+repl :: AppEnvironment -> App ()
+repl a = do
+    s <- textRead
+    quit s
+    liftIO $ say $ "you searched for: " <> s
+    repl a
+
+makeAppEnvrionment :: FilePath -> App AppEnvironment
+makeAppEnvrionment f = do
+    next <- makeNewSaveDir f
+    pure $ AppEnvironment f next "" ""
+
+run :: IO ()
 run = do
-    args <- liftIO getArgs
+    args <- getArgs
     case args of
         [f] -> do
-            s <- makeNewSaveDir f
-            env <- makeAppEnv f s
-            liftIO $ say "created a directory"
+            unApp (makeAppEnvrionment f) >>= unApp . repl
         _ -> say "Usage: tpbt DIRECTORY"
