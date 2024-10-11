@@ -16,12 +16,11 @@ extra-doc-files:
 common warnings
     ghc-options: -Wall -threaded
 
-executable tpbt
+library
     import:           warnings
-    main-is:          Main.hs
-    other-modules:    TPB.Types
+    other-modules:    TUI
+                      TPB.Types
                       TPB.Monad
-    -- other-extensions:
     build-depends:    base ^>=4.17.2.1
                     , brick
                     , vty
@@ -37,4 +36,12 @@ executable tpbt
                     , process
                     , vector
     hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable tpbt
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^>=4.17.2.1
+                    , tpbt
+    hs-source-dirs:   app
     default-language: Haskell2010

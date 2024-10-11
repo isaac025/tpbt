@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Main where
+module TUI where
 
 import Brick.AttrMap (AttrMap, AttrName, attrMap, attrName)
 import Brick.Focus (
@@ -285,5 +285,5 @@ theApp =
         , appAttrMap = const appMap
         }
 
-main :: IO ()
-main = void $ defaultMain theApp initState
+runApp :: IO ()
+runApp = void $ defaultMain theApp initState
