@@ -2,13 +2,16 @@
 
 module Lifted where
 
-import Config
 import Control.Monad.IO.Class
+import Control.Monad.Reader
+import Core
+import Data.IORef
 import Data.Text (intercalate, pack)
 import Network.HTTP.Simple (Request, getResponseBody, httpJSONEither, parseRequestThrow)
 import Network.URI.Encode (encode)
 import Say
-import Types
+import System.FilePath ((</>))
+import System.Process
 import Prelude hiding (id)
 
 api :: String -> String
@@ -34,6 +37,12 @@ printCategories = do
     liftIO $ say $ intercalate "\n" xs
     pure ()
 
+printResults :: [Result] -> App ()
+printResults res = do
+    say "Please choose: "
+    let xs = [pack (show x) <> ") " <> pack (show cat) | (cat, x) <- zip res ([1 ..] :: [Int])]
+    liftIO $ say $ intercalate "\n" xs
+
 trackers :: String
 trackers =
     concat
@@ -53,7 +62,10 @@ mkMagentLink Result{..} = base <> infoHash <> "&dn=" <> encode name <> trackers
     base :: String
     base = "magnet:?xt=urn:btih:"
 
-{-
-downloadTorrent :: Result -> IO ()
-downloadTorrent = callProcess "transmission-cli" . (: []) . mkMagentLinkpi :: String -> String
--}
+downloadTorrent :: Result -> App ()
+downloadTorrent r = do
+    Dir{..} <- ask
+    s' <- liftIO $ readIORef saveAs
+    let path = dir </> s'
+    let link = mkMagentLink r
+    liftIO $ callProcess "transmission-cli" ["-w", path, link]

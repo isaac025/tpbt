@@ -1,13 +1,34 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Types where
+module Core where
 
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 import Data.Aeson (FromJSON (..), camelTo2, defaultOptions, fieldLabelModifier, genericParseJSON)
 import Data.Char (isAlphaNum)
+import Data.IORef
+import Data.Text (Text)
 import GHC.Generics (Generic)
 import Prelude hiding (id)
+
+data Dir = Dir
+    { dir :: FilePath
+    , saveAs :: IORef FilePath
+    }
+
+newtype App a = App {unApp :: ReaderT Dir IO a}
+    deriving (Functor, Applicative, Monad, MonadIO, MonadReader Dir)
+
+runApp :: Dir -> App a -> IO a
+runApp d (App a) = runReaderT a d
+
+data ReqEnv = ReqEnv
+    { search :: Text
+    , categorySel :: Audio
+    }
 
 data Result = Result
     { id :: String
@@ -31,8 +52,8 @@ instance Show Result where
         cleanedName = takeWhile (\x -> isAlphaNum x || x `elem` (" -" :: String)) name
         prettySize =
             let mb = show $ read @Double size * 1.048576
-                (int, frac) = (takeWhile (/= '.') mb, take 2 $ dropWhile (/= '.') mb)
-             in show int <> "." <> show frac
+                (int, frac) = (takeWhile (/= '.') mb, take 3 $ dropWhile (/= '.') mb)
+             in int <> frac
 
 instance FromJSON Result where
     parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}

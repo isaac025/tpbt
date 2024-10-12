@@ -1,11 +1,13 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 module App where
 
-import Config
-import Control.Monad (unless, when)
 import Control.Monad.IO.Class
+import Control.Monad.Reader
+import Core
 import Data.Char (digitToInt)
+import Data.IORef
 import Data.Text (Text, pack, unpack)
 import Data.Text.IO (getLine, putStr)
 import Lifted
@@ -19,28 +21,27 @@ import System.Directory (
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 import System.IO (hFlush, stdout)
-import Types
 import Prelude hiding (getLine, putStr)
 
 getNextDirectory :: [FilePath] -> FilePath
 getNextDirectory [] = "F00"
 getNextDirectory xs =
-    let dir = last xs
-        (c, s) = (tail dir, init dir)
+    let cdir = last xs
+        (c, s) = (tail cdir, init cdir)
         n = digitToInt (last c) + 1
      in s <> show n
 
-makeNewSaveDir :: FilePath -> App FilePath
+makeNewSaveDir :: FilePath -> IO (IORef FilePath)
 makeNewSaveDir f = do
-    b <- liftIO $ doesDirectoryExist f
+    b <- doesDirectoryExist f
     unless b $
         say "Directory does not exist!"
-    files <- liftIO $ listDirectory f
+    files <- listDirectory f
     let next = getNextDirectory files
-    liftIO $ withCurrentDirectory f $ do
+    withCurrentDirectory f $ do
         say $ "created directory: " <> pack next
         createDirectory next
-    pure next
+    newIORef next
 
 textRead :: App Text
 textRead = liftIO (putStr "tpbt> ") >> liftIO (hFlush stdout) >> liftIO getLine
@@ -48,8 +49,14 @@ textRead = liftIO (putStr "tpbt> ") >> liftIO (hFlush stdout) >> liftIO getLine
 quit :: Text -> App ()
 quit s = when (s == "quit" || s == "q") $ liftIO exitSuccess
 
-repl :: AppEnvironment -> App ()
-repl a = do
+updateNextDir :: App ()
+updateNextDir = do
+    Dir{..} <- ask
+    paths <- liftIO $ listDirectory dir
+    liftIO $ writeIORef saveAs (getNextDirectory paths)
+
+repl :: App ()
+repl = do
     liftIO $ say "Search for an artist/song: "
     s <- textRead
     quit s
@@ -59,18 +66,16 @@ repl a = do
     quit c
     req <- makeRequest (unpack s) (toCat (read @Audio $ unpack c))
     res <- fetch req
-    liftIO $ say (pack $ show res)
-    repl a
-
-makeAppEnvrionment :: FilePath -> App AppEnvironment
-makeAppEnvrionment f = do
-    next <- makeNewSaveDir f
-    pure $ AppEnvironment f next
+    printResults res
+    num <- read @Int . unpack <$> textRead
+    downloadTorrent (res !! num)
+    -- updateNextDir
+    repl
 
 run :: IO ()
 run = do
     args <- getArgs
     case args of
-        [f] -> do
-            unApp (makeAppEnvrionment f) >>= unApp . repl
+        [f] ->
+            makeNewSaveDir f >>= \x -> runApp (Dir f x) repl
         _ -> say "Usage: tpbt DIRECTORY"
