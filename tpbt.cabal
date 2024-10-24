@@ -1,46 +1,36 @@
 cabal-version:      3.0
 name:               tpbt
 version:            0.1.0.0
-synopsis:           The Pirate Bay TUI
+synopsis:           The Pirate Bay Tui
+-- description:
 homepage:           https://github.com/isaac025/tpbt
-license:            GPL-2.0-only
+license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Isaac Hiram Lopez Diaz
-maintainer:         isaac.lopez@upr.com
+maintainer:         isaac.lopez@upr.edu
+-- copyright:
 category:           Development
 build-type:         Simple
-extra-doc-files:    
-    CHANGELOG.md
-    README.md
+extra-doc-files:    CHANGELOG.md
+-- extra-source-files:
 
 common warnings
-    ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wno-unused-top-binds -Wno-orphans -Wno-error=unrecognised-warning-flags 
-
-library
-    import:           warnings
-    exposed-modules:
-        App
-        Lifted
-        Core
-    default-extensions:
-        OverloadedStrings
-    build-depends:    base ^>=4.17.2.1
-                    , say
-                    , directory
-                    , text 
-                    , http-conduit
-                    , aeson
-                    , uri-encode
-                    , mtl
-                    , process
-                    , filepath
-    hs-source-dirs:   src
-    default-language: Haskell2010
+    ghc-options: -threaded -Wall -Wcompat -O2 
 
 executable tpbt
     import:           warnings
     main-is:          Main.hs
+    -- other-modules:
+    default-extensions:
+        ImportQualifiedPost
+        OverloadedStrings
     build-depends:    base ^>=4.17.2.1
-                    , tpbt
-    hs-source-dirs:   app
+                    , vty
+                    , brick
+                    , text
+                    , microlens
+                    , microlens-mtl
+                    , microlens-th
+                    , vector
+    hs-source-dirs:   src
     default-language: Haskell2010
